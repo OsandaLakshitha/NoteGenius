@@ -95,7 +95,11 @@ const deleteFolder = async (req, res) => {
         return res.status(404).json({ error: 'Folder not found' });
       }
   
-      // 3️⃣ Delete the folder (Now we are sure it exists)
+      // 3️⃣ Remove notes from the folder without deleting the notes themselves
+      folder.notes = [];
+      await folder.save();
+  
+      // 4️⃣ Delete the folder (Now we are sure it exists)
       await Folder.findByIdAndDelete(id);
   
       return res.status(200).json({ message: 'Folder deleted successfully' });
@@ -104,11 +108,81 @@ const deleteFolder = async (req, res) => {
     }
   };
   
+// Add note to folder
+const addNoteToFolder = async (req, res) => {
+    try {
+        const { id } = req.params; // Folder ID from URL
+        const { noteId, type } = req.body;
+
+        // Check if folder exists
+        const folder = await Folder.findById(id);
+        if (!folder) {
+            return res.status(404).json({ error: 'Folder not found' });
+        }
+
+        // Check if note exists in another folder
+        const existingFolder = await Folder.findOne({ 'notes.noteId': noteId });
+        if (existingFolder) {
+            // Remove note from the existing folder
+            existingFolder.notes = existingFolder.notes.filter(note => note.noteId.toString() !== noteId);
+            await existingFolder.save();
+        }
+
+        // Add note to folder
+        folder.notes.push({ noteId, type });
+        await folder.save();
+
+        res.status(200).json({ message: 'Note added to folder successfully', folder });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Retrieve notes inside folder
+const getNotesInFolder = async (req, res) => {
+    try {
+        const { id } = req.params; // Folder ID from URL
+
+        // Check if folder exists
+        const folder = await Folder.findById(id).populate('notes.noteId');
+        if (!folder) {
+            return res.status(404).json({ error: 'Folder not found' });
+        }
+
+        res.status(200).json({ notes: folder.notes });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Remove note from folder
+const removeNoteFromFolder = async (req, res) => {
+    try {
+        const { id, noteId } = req.params; // Folder ID and Note ID from URL
+
+        // Check if folder exists
+        const folder = await Folder.findById(id);
+        if (!folder) {
+            return res.status(404).json({ error: 'Folder not found' });
+        }
+
+        // Remove note from folder
+        folder.notes = folder.notes.filter(note => note.noteId.toString() !== noteId);
+        await folder.save();
+
+        res.status(200).json({ message: 'Note removed from folder successfully', folder });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
 
 module.exports = {
     createFolder,
     getFolders,
     getFolderById,
     updateFolder,
-    deleteFolder
+    deleteFolder,
+    addNoteToFolder,
+    getNotesInFolder,
+    removeNoteFromFolder
 }

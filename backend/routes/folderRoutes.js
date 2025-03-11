@@ -4,7 +4,10 @@ const {
     getFolders,
     getFolderById,
     updateFolder,
-    deleteFolder
+    deleteFolder,
+    addNoteToFolder,
+    getNotesInFolder,
+    removeNoteFromFolder
 } = require('../controllers/folderController');
 
 const router = express.Router();
@@ -14,5 +17,8 @@ router.get('/',getFolders);
 router.get('/:id',getFolderById);
 router.put('/:id',updateFolder);
 router.delete('/:id',deleteFolder);
+router.post('/:id/add-note', addNoteToFolder);
+router.get('/:id/notes', getNotesInFolder);
+router.delete('/:id/remove-note/:noteId', removeNoteFromFolder);
 
 module.exports = router;
