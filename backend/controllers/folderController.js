@@ -52,30 +52,27 @@ const getFolderById = async (req,res) => {
 //Update Folder (color,name)
 const updateFolder = async (req,res) => {
     try {
-        const {name,color} = req.body;
+        const { id } = req.params; // Folder ID from URL
+    const { name, color } = req.body;
 
-        //Validate name
-        const existingFolder = await Folder.findOne({name});
-        if(existingFolder){
-            return res.status(400).json({error: 'Folder name already exists. Choose different name '});
-        }
+    // Check if folder exists
+    const folder = await Folder.findById(id);
+    if (!folder) {
+      return res.status(404).json({ error: 'Folder not found' });
+    }
 
-        //validate color 
-        if(color && !predefinedColors.includes(color)) {
-            return res.status(400).json({error: 'Invalid color Selection'});
-        }
+    // Validate name (Ensure it's unique, excluding the current folder)
+    const existingFolder = await Folder.findOne({ name, _id: { $ne: id } });
+    if (existingFolder) {
+      return res.status(400).json({ error: 'Folder name already exists. Choose a different name.' });
+    }
 
-        const updatedFolder = await Folder.findByIdAndUpdate(
-            req.params.id,
-            {name, color},
-            {new: true,runValidators:true}
-        );
+    // Update folder
+    folder.name = name || folder.name;
+    folder.color = color || folder.color;
+    await folder.save();
 
-        if (!updatedFolder) {
-            return res.status(404).json({ error: 'Folder not found' });
-        }
-
-    res.status(200).json(updatedFolder);
+    res.status(200).json({ message: 'Folder updated successfully', folder });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
