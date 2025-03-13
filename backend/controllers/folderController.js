@@ -1,11 +1,13 @@
 const Folder = require('../models/Folder');
+const HandwrittenNote = require('../models/HandwrittenNote');
+const StructuredText = require('../models/StructuredText');
+const VoiceNote = require('../models/VoiceNote');
 const predefinedColors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
 const mongoose = require('mongoose');
 
 //Create folder
 const createFolder = async (req, res) => {
     try {
-
         const{name,color} = req.body;
 
         //validate color 
@@ -108,27 +110,74 @@ const deleteFolder = async (req, res) => {
     }
   };
   
+// // Add note to folder
+// const addNoteToFolder = async (req, res) => {
+//     try {
+//         const { id } = req.params; // Folder ID from URL
+//         const { noteId, type } = req.body;
+
+//         // Check if folder exists
+//         const folder = await Folder.findById(id);
+//         if (!folder) {
+//             return res.status(404).json({ error: 'Folder not found' });
+//         }
+
+//         // Check if note exists in another folder
+//         const existingFolder = await Folder.findOne({ 'notes.noteId': noteId });
+//         if (existingFolder) {
+//             // Remove note from the existing folder
+//             existingFolder.notes = existingFolder.notes.filter(note => note.noteId.toString() !== noteId);
+//             await existingFolder.save();
+//         }
+
+//         // Add note to folder
+//         folder.notes.push({ noteId, type });
+//         await folder.save();
+
+//         res.status(200).json({ message: 'Note added to folder successfully', folder });
+//     } catch (error) {
+//         res.status(500).json({ error: error.message });
+//     }
+// };
+
 // Add note to folder
 const addNoteToFolder = async (req, res) => {
     try {
-        const { id } = req.params; // Folder ID from URL
-        const { noteId, type } = req.body;
+        const { id } = req.params; // Folder ID
+        const { noteId } = req.body; // Only Note ID (No need for type from frontend)
 
-        // Check if folder exists
+        // Validate if the folder exists
         const folder = await Folder.findById(id);
         if (!folder) {
             return res.status(404).json({ error: 'Folder not found' });
         }
 
-        // Check if note exists in another folder
+        let type = null;
+
+        // 🔥 Determine the type automatically
+        if (await HandwrittenNote.findById(noteId)) {
+            type = 'HandwrittenNote';
+        } else if (await StructuredText.findById(noteId)) {
+            type = 'StructuredText';
+        } else if (await VoiceNote.findById(noteId)) {
+            type = 'VoiceNote';
+        } else {
+            return res.status(404).json({ error: 'Note not found in any collection' });
+        }
+
+        // 🔥 Ensure `type` is set before pushing the note
+        if (!type) {
+            return res.status(400).json({ error: 'Note type could not be determined' });
+        }
+
+        // Remove note from another folder if it exists
         const existingFolder = await Folder.findOne({ 'notes.noteId': noteId });
         if (existingFolder) {
-            // Remove note from the existing folder
             existingFolder.notes = existingFolder.notes.filter(note => note.noteId.toString() !== noteId);
             await existingFolder.save();
         }
 
-        // Add note to folder
+        // Add note to the new folder
         folder.notes.push({ noteId, type });
         await folder.save();
 
@@ -175,6 +224,31 @@ const removeNoteFromFolder = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+//get all notes
+const getAllNotes = async (req, res) => {
+    try {
+        const handwrittenNotes = await HandwrittenNote.find().lean().then(notes => 
+            notes.map(note => ({ ...note, noteType: 'HandwrittenNote' }))
+        );
+
+        const structuredTextNotes = await StructuredText.find().lean().then(notes => 
+            notes.map(note => ({ ...note, noteType: 'StructuredText' }))
+        );
+
+        const voiceNotes = await VoiceNote.find().lean().then(notes => 
+            notes.map(note => ({ ...note, noteType: 'VoiceNote' }))
+        );
+
+        // Merge all notes
+        const allNotes = [...handwrittenNotes, ...structuredTextNotes, ...voiceNotes];
+
+        res.json(allNotes);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 
 module.exports = {
     createFolder,

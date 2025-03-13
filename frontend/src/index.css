@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* General Styles */
 body {
   font-family: 'Courier New', Courier, monospace;

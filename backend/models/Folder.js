@@ -15,14 +15,16 @@ const FolderSchema = new mongoose.Schema({
     },
     notes: [
       {
-        noteId: { type: mongoose.Schema.Types.ObjectId, 
+        noteId: { 
+            type: mongoose.Schema.Types.ObjectId, 
             required: true, 
-            refPath: 'notes.type' }, // Reference note ID,
-            type: { type: String, 
-                required: true, 
-                enum: ['HandwrittenNote', 
-                       'StructuredText', 
-                       'TextNote'] }, // Store note type,
+            refPath: 'notes.type' // Reference note ID
+        },
+        type: { 
+            type: String, 
+            required: true, 
+            enum: ['HandwrittenNote', 'StructuredText', 'VoiceNote'] // Store note type
+        },
         addedAt: {
           type: Date,
           default: Date.now

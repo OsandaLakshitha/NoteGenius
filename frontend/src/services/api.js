@@ -36,3 +36,13 @@ export const deleteStructuredText = (id) => structuredTextApi.delete(`/${id}`);
 // frontend/src/services/api.js
 export const askQuestion = (data) => 
   axios.post('http://localhost:5000/api/chatbot/ask', data);
+
+// Folder API
+const folderApi = createApiClient('/api/folders');
+export const getFolders = () => folderApi.get('/');
+export const createFolder = (folder) => folderApi.post('/create-folder', folder);
+export const updateFolder = (id, folder) => folderApi.put(`/${id}`, folder);
+export const deleteFolder = (id) => folderApi.delete(`/${id}`);
+export const addNoteToFolder = (id, note) => folderApi.post(`/${id}/add-note`, note);
+export const getNotesInFolder = (id) => folderApi.get(`/${id}/notes`);
+export const removeNoteFromFolder = (id, noteId) => folderApi.delete(`/${id}/remove-note/${noteId}`);
