@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Folder, Add, Edit, Delete } from "@mui/icons-material";
+import { Folder, Add, Edit, Delete, Close } from "@mui/icons-material";
 import { IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button, Select, MenuItem } from "@mui/material";
 import { getFolders, createFolder, updateFolder, deleteFolder, getNotesInFolder, getNotes, addNoteToFolder, removeNoteFromFolder, getVoiceNotes, getStructuredTexts } from "../services/api"; // Import your API functions
 
@@ -13,10 +13,10 @@ const Sidebar = ({ folders, onSelectFolder, onAddFolder, onEditFolder, onDeleteF
       {/* Static Header */}
       <div className="flex justify-between items-center mb-4">
         <IconButton onClick={onAddFolder} className="text-white hover:bg-gray-700">
-          <Add className="text-white" fontSize="small" />
+          <Add className="text-white" fontSize="medeium" />
         </IconButton>
         <IconButton onClick={() => setShowFolders(!showFolders)} className="text-white hover:bg-gray-700">
-          <Folder className="text-white" fontSize="small" />
+          <Folder className="text-blue-500" fontSize="medeium" />
         </IconButton>
       </div>
 
@@ -30,7 +30,7 @@ const Sidebar = ({ folders, onSelectFolder, onAddFolder, onEditFolder, onDeleteF
               onClick={() => onSelectFolder(folder._id)}
             >
               <div className="flex items-center gap-2">
-                <Folder style={{ color: folder.color }} fontSize="small" />
+                <Folder style={{ color: folder.color }} fontSize="small"/>
                 <span>{folder.name}</span>
               </div>
               <div className="flex gap-1">
@@ -41,7 +41,7 @@ const Sidebar = ({ folders, onSelectFolder, onAddFolder, onEditFolder, onDeleteF
                   }}
                   className="text-white hover:bg-gray-600 p-1"
                 >
-                  <Edit fontSize="small" />
+                  <Edit fontSize="small" className="text-blue-500" />
                 </IconButton>
                 <IconButton
                   onClick={(e) => {
@@ -50,7 +50,7 @@ const Sidebar = ({ folders, onSelectFolder, onAddFolder, onEditFolder, onDeleteF
                   }}
                   className="text-white hover:bg-gray-600 p-1"
                 >
-                  <Delete fontSize="small" />
+                  <Delete fontSize="small" className="text-red-500" />
                 </IconButton>
               </div>
             </div>
@@ -138,7 +138,7 @@ const Folders = () => {
       const updatedFolder = { name: newFolderName, color: newFolderColor };
       const response = await updateFolder(editingFolder._id, updatedFolder);
       const updatedFolders = folders.map(f => 
-        f._id === editingFolder._id ? response.data : f // Assuming the API returns the updated folder
+        f._id === editingFolder._id ? response.data.folder : f // Assuming the API returns the updated folder
       );
       setFolders(updatedFolders);
       setEditOpen(false);
@@ -221,7 +221,7 @@ const Folders = () => {
                     onClick={() => handleRemoveNoteFromFolder(note.noteId._id)}
                     className="text-red-500 hover:bg-gray-200 p-1"
                   >
-                    <Delete fontSize="small" />
+                    <Close fontSize="small" className="text-red-500" />
                   </IconButton>
                 </li>
               ))}
