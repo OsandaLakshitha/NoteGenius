@@ -216,6 +216,8 @@ const Folders = () => {
                   <div>
                     <h3 className="text-lg font-semibold">{note.noteId.title}</h3>
                     <p className="text-gray-700 mt-1">{note.noteId.content}</p>
+                    <p className="text-gray-500 text-sm mt-1">Type: {note.type}</p>
+                    <p className="text-gray-500 text-sm mt-1">Added on: {new Date(note.addedAt).toLocaleDateString()}</p>
                   </div>
                   <IconButton
                     onClick={() => handleRemoveNoteFromFolder(note.noteId._id)}
@@ -226,9 +228,16 @@ const Folders = () => {
                 </li>
               ))}
             </ul>
-            <Button variant="contained" color="primary" onClick={() => setAddNoteOpen(true)}>
+            {/* <Button variant="contained" color="primary" onClick={() => setAddNoteOpen(true)}>
               Add Note to Folder
-            </Button>
+            </Button> */}
+            <IconButton
+  onClick={() => setAddNoteOpen(true)}
+  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110"
+  style={{ minWidth: '56px', minHeight: '56px' }} // Larger size for better visibility
+>
+  <Add fontSize="large" /> {/* Larger icon */}
+</IconButton>
           </div>
         ) : (
           <p>Select a folder to view notes</p>

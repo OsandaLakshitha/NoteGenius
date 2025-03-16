@@ -154,7 +154,7 @@ const addNoteToFolder = async (req, res) => {
 
         let type = null;
 
-        // 🔥 Determine the type automatically
+        // Determine the type automatically
         if (await HandwrittenNote.findById(noteId)) {
             type = 'HandwrittenNote';
         } else if (await StructuredText.findById(noteId)) {
@@ -165,7 +165,7 @@ const addNoteToFolder = async (req, res) => {
             return res.status(404).json({ error: 'Note not found in any collection' });
         }
 
-        // 🔥 Ensure `type` is set before pushing the note
+        //  Ensure `type` is set before pushing the note
         if (!type) {
             return res.status(400).json({ error: 'Note type could not be determined' });
         }
