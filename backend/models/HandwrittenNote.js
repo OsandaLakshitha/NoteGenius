@@ -9,6 +9,10 @@ const HandwrittenNoteSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  tags: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tag', // Referencing the Tag model
+  }],
   createdAt: {
     type: Date,
     default: Date.now,

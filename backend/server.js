@@ -6,6 +6,7 @@ const path = require('path');
 const handwrittenNoteRoutes = require('./routes/handwrittenNoteRoutes');
 const voiceNoteRoutes = require('./routes/voiceNoteRoutes');
 const structuredTextRoutes = require('./routes/structuredTextRoutes');
+const tagRoutes = require('./routes/tagRoutes');
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve u
 app.use('/api/handwritten-notes', handwrittenNoteRoutes);
 app.use('/api/voice-notes', voiceNoteRoutes);
 app.use('/api/structured-texts', structuredTextRoutes);
+app.use('/api', tagRoutes);
 
 // MongoDB Connection
 mongoose
