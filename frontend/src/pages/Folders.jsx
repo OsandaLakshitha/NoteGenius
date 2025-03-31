@@ -95,6 +95,12 @@ const Sidebar = ({
         placeholder="Search folders..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
+        sx={{
+          marginBottom: "8px",
+          "& .MuiOutlinedInput-root": {
+            height: "40px",
+          },
+        }}
       />
 
       {/* Color Filter Dropdown */}
@@ -104,6 +110,13 @@ const Sidebar = ({
         value={selectedColor}
         onChange={(e) => setSelectedColor(e.target.value)}
         displayEmpty
+        size="small"
+        sx={{
+          marginBottom: "8px",
+          "& .MuiOutlinedInput-root": {
+            height: "40px",
+          },
+        }}
       >
         <MenuItem value="">
           <em>All Colors</em>
@@ -370,6 +383,28 @@ const Folders = () => {
   const handleAddNoteToFolder = async () => {
     if (!selectedNoteId) return;
     try {
+      // Check if the note is already in another folder
+      const existingFolder = folders.find((folder) =>
+        folder.notes.some((note) => note.noteId === selectedNoteId)
+      );
+
+      if (existingFolder && existingFolder._id !== selectedFolder) {
+        handleClose();
+        // Show confirmation alert
+        const result = await Swal.fire({
+          title: "Note already in another folder",
+          text: `This note is already in the folder "${existingFolder.name}". Do you want to move it to the selected folder?`,
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Yes, move it",
+          cancelButtonText: "Cancel",
+        });
+
+        if (!result.isConfirmed) {
+          return; // Exit if the user cancels
+        }
+      }
+
       const note = {
         noteId: selectedNoteId,
         type: allNotes.find((note) => note._id === selectedNoteId).type,
