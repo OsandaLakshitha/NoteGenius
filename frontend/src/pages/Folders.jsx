@@ -6,6 +6,7 @@ import {
   Delete,
   Close,
   ArrowBack,
+  Description,
 } from "@mui/icons-material";
 import {
   IconButton,
@@ -33,6 +34,7 @@ import {
   getStructuredTexts,
 } from "../services/api"; // Import your API functions
 import Swal from "sweetalert2";
+import { jsPDF } from "jspdf";
 
 const predefinedColors = ["red", "blue", "green", "yellow", "purple", "orange"];
 
@@ -71,6 +73,7 @@ const Sidebar = ({
             <Add className="text-green-400" fontSize="large" />
           </IconButton>
         </Tooltip>
+
         <Typography
           variant="h6"
           fontWeight="bold"
@@ -460,6 +463,80 @@ const Folders = () => {
     });
   };
 
+  const generateReport = () => {
+    if (!selectedFolder || notes.length === 0) {
+      Swal.fire({
+        title: "No Notes",
+        text: "Please select a folder with notes to generate a report.",
+        icon: "warning",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    const folderName =
+      folders.find((f) => f._id === selectedFolder)?.name || "Unnamed Folder";
+    const doc = new jsPDF();
+
+    // Add title
+    doc.setFontSize(18);
+    doc.text(`Folder Report: ${folderName}`, 20, 20);
+
+    // Add metadata
+    doc.setFontSize(12);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
+    doc.text(`Total Notes: ${notes.length}`, 20, 40);
+
+    // Add notes
+    let yPosition = 60;
+    doc.setFontSize(14);
+    doc.text("Notes:", 20, yPosition);
+    yPosition += 10;
+
+    notes.forEach((note, index) => {
+      const title = note.noteId.title || "Untitled Note";
+      const content =
+        note.noteId.content ||
+        note.noteId.transcript ||
+        note.noteId.extractedText ||
+        "No content";
+      const type = note.type || "Unknown";
+      const addedAt = note.addedAt
+        ? new Date(note.addedAt).toLocaleDateString()
+        : "Unknown Date";
+
+      doc.setFontSize(12);
+      doc.text(`${index + 1}. ${title}`, 20, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      const splitContent = doc.splitTextToSize(content, 170); // Wrap text at 170mm width
+      doc.text(splitContent, 25, yPosition);
+      yPosition += splitContent.length * 5 + 5;
+
+      doc.text(`Type: ${type} | Added: ${addedAt}`, 25, yPosition);
+      yPosition += 10;
+
+      // Check if we need a new page
+      if (yPosition > 280) {
+        doc.addPage();
+        yPosition = 20;
+      }
+    });
+
+    // Save the PDF
+    doc.save(
+      `${folderName}_Report_${new Date().toISOString().split("T")[0]}.pdf`
+    );
+
+    Swal.fire({
+      title: "Success!",
+      text: "Report generated successfully.",
+      icon: "success",
+      confirmButtonText: "OK",
+    });
+  };
+
   return (
     <div className="flex h-screen bg-white">
       <Sidebar
@@ -550,14 +627,26 @@ const Folders = () => {
               </div>
             )}
 
-            <div className="fixed bottom-8 right-8">
+            <div className="fixed bottom-8 right-8 flex flex-col items-center gap-4">
+              {/* Add Note Button */}
               <IconButton
                 onClick={() => setAddNoteOpen(true)}
                 className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                style={{ minWidth: "60px", minHeight: "60px" }}
+                style={{ width: "60px", height: "60px" }}
               >
                 <Add fontSize="large" />
               </IconButton>
+
+              {/* Generate Report Button */}
+              <Tooltip title="Generate Report">
+                <IconButton
+                  onClick={generateReport}
+                  className="bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  style={{ width: "60px", height: "60px" }}
+                >
+                  <Description fontSize="large" />
+                </IconButton>
+              </Tooltip>
             </div>
           </div>
         ) : (
