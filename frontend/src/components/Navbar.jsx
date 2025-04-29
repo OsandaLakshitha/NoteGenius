@@ -10,6 +10,7 @@ const Navbar = () => {
         <li><Link to="/handwritten">Handwritten Notes</Link></li>
         <li><Link to="/voice">Voice Notes</Link></li>
         <li><Link to="/structured">Structured Text</Link></li>
+        <li><Link to="/folders">Folders</Link></li> {/* Corrected the link to folders */}
       </ul>
     </nav>
   );

@@ -4,6 +4,8 @@ import Home from './pages/Home';
 import HandwrittenNotes from './pages/HandwrittenNotes';
 import VoiceNotes from './pages/VoiceNotes';
 import StructuredText from './pages/StructuredText';
+import Folders from './pages/Folders';
+import NoteyLandingPage from './pages/new';
 
 const App = () => {
   return (
@@ -13,6 +15,8 @@ const App = () => {
         <Route path="/handwritten" element={<HandwrittenNotes />} />
         <Route path="/voice" element={<VoiceNotes />} />
         <Route path="/structured" element={<StructuredText />} />
+        <Route path="/folders" element={<Folders />} />
+        
       </Routes>
     </Router>
   );
