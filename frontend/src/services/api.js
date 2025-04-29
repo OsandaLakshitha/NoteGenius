@@ -53,4 +53,3 @@ export const getTags = () => tagsApi.get('/');
 export const createTag = (tag) => tagsApi.post('/', tag);
 export const updateTag = (id, tag) => tagsApi.put(`/${id}`, tag);
 export const deleteTag = (id) => tagsApi.delete(`/${id}`);
-

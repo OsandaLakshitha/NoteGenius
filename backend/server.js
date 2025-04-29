@@ -9,7 +9,6 @@ const structuredTextRoutes = require('./routes/structuredTextRoutes');
 const folderRoutes = require('./routes/folderRoutes');
 const tagRoutes = require('./routes/tagRoutes');
 
-
 dotenv.config();
 
 const app = express();

@@ -5,6 +5,7 @@ import HandwrittenNotes from './pages/HandwrittenNotes';
 import VoiceNotes from './pages/VoiceNotes';
 import StructuredText from './pages/StructuredText';
 import Folders from './pages/Folders';
+import NoteyLandingPage from './pages/new';
 
 const App = () => {
   return (
