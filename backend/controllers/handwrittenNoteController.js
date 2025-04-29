@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const HandwrittenNote = require('../models/HandwrittenNote');
 const Tag = require('../models/Tag');
 
@@ -5,21 +6,41 @@ const Tag = require('../models/Tag');
 exports.createNote = async (req, res) => {
   try {
     const { title, content, tags } = req.body;
-    const newNote = new HandwrittenNote({ title, content, tags });
+
+    if (!title || !content) {
+      return res.status(400).json({ error: 'Title and content are required.' });
+    }
+
+    if (!Array.isArray(tags) || tags.some(tag => !mongoose.Types.ObjectId.isValid(tag))) {
+      return res.status(400).json({ error: 'One or more tags are invalid.' });
+    }
+
+    const existingTags = await Tag.find({ _id: { $in: tags } });
+    if (existingTags.length !== tags.length) {
+      return res.status(400).json({ error: 'One or more tags do not exist.' });
+    }
+
+    const newNote = new HandwrittenNote({ 
+      title, 
+      content, 
+      tags: existingTags.map(tag => tag._id),
+    });
+
     await newNote.save();
-    res.status(201).json(newNote);
+    const populatedNote = await newNote.populate('tags');
+    res.status(201).json(populatedNote);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
 
 // Get all notes
 exports.getNotes = async (req, res) => {
   try {
-    const notes = await HandwrittenNote.find().populate('tags'); // Populate tags
+    const notes = await HandwrittenNote.find().populate('tags');
     res.status(200).json(notes);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
 
@@ -27,16 +48,21 @@ exports.getNotes = async (req, res) => {
 exports.updateNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content, tags } = req.body;
+    const { title, content } = req.body;
+
     const updatedNote = await HandwrittenNote.findByIdAndUpdate(
       id,
-      { title, content, tags },
+      { title, content },
       { new: true }
-    ).populate('tags'); // Populate tags after update
+    ).populate('tags');
+
+    if (!updatedNote) {
+      return res.status(404).json({ error: 'Note not found.' });
+    }
 
     res.status(200).json(updatedNote);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
 
@@ -44,43 +70,14 @@ exports.updateNote = async (req, res) => {
 exports.deleteNote = async (req, res) => {
   try {
     const { id } = req.params;
-    await HandwrittenNote.findByIdAndDelete(id);
-    res.status(200).json({ message: 'Note deleted successfully' });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
+    const note = await HandwrittenNote.findByIdAndDelete(id);
 
-// Add a tag to a note
-exports.addTagToNote = async (req, res) => {
-  try {
-    const { noteId, tagId } = req.params;
-    const note = await HandwrittenNote.findById(noteId);
-    if (!note) return res.status(404).json({ message: 'Note not found' });
-
-    if (!note.tags.includes(tagId)) {
-      note.tags.push(tagId);
-      await note.save();
+    if (!note) {
+      return res.status(404).json({ error: 'Note not found.' });
     }
 
-    res.status(200).json(note);
+    res.status(200).json({ message: 'Note deleted successfully' });
   } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-// Remove a tag from a note
-exports.removeTagFromNote = async (req, res) => {
-  try {
-    const { noteId, tagId } = req.params;
-    const note = await HandwrittenNote.findById(noteId);
-    if (!note) return res.status(404).json({ message: 'Note not found' });
-
-    note.tags = note.tags.filter(tag => tag.toString() !== tagId);
-    await note.save();
-
-    res.status(200).json(note);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
