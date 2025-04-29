@@ -7,6 +7,7 @@ const handwrittenNoteRoutes = require('./routes/handwrittenNoteRoutes');
 const voiceNoteRoutes = require('./routes/voiceNoteRoutes');
 const structuredTextRoutes = require('./routes/structuredTextRoutes');
 const folderRoutes = require('./routes/folderRoutes');
+const tagRoutes = require('./routes/tagRoutes');
 
 dotenv.config();
 
@@ -23,6 +24,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve u
 app.use('/api/handwritten-notes', handwrittenNoteRoutes);
 app.use('/api/voice-notes', voiceNoteRoutes);
 app.use('/api/structured-texts', structuredTextRoutes);
+
+// Tag Routes
+app.use('/api', tagRoutes);
 
 //Folder Routes
 app.use('/api/folders',folderRoutes);

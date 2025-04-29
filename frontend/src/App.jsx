@@ -16,7 +16,6 @@ const App = () => {
         <Route path="/voice" element={<VoiceNotes />} />
         <Route path="/structured" element={<StructuredText />} />
         <Route path="/folders" element={<Folders />} />
-        
       </Routes>
     </Router>
   );

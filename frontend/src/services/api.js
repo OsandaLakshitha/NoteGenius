@@ -46,3 +46,10 @@ export const deleteFolder = (id) => folderApi.delete(`/${id}`);
 export const addNoteToFolder = (id, note) => folderApi.post(`/${id}/add-note`, note);
 export const getNotesInFolder = (id) => folderApi.get(`/${id}/notes`);
 export const removeNoteFromFolder = (id, noteId) => folderApi.delete(`/${id}/remove-note/${noteId}`);
+
+// Tags API
+const tagsApi = createApiClient('/api/tags');
+export const getTags = () => tagsApi.get('/');
+export const createTag = (tag) => tagsApi.post('/', tag);
+export const updateTag = (id, tag) => tagsApi.put(`/${id}`, tag);
+export const deleteTag = (id) => tagsApi.delete(`/${id}`);
