@@ -22,17 +22,19 @@ import {
   Tooltip,
 } from "@mui/material";
 import {
-  getFolders,
+  getFoldersusr,
   createFolder,
   updateFolder,
   deleteFolder,
   getNotesInFolder,
-  getNotes,
+  getNotesuser,
   addNoteToFolder,
   removeNoteFromFolder,
   getVoiceNotes,
   getStructuredTexts,
 } from "../services/api"; // Import your API functions
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import { jsPDF } from "jspdf";
 
@@ -73,7 +75,6 @@ const Sidebar = ({
             <Add className="text-green-400" fontSize="large" />
           </IconButton>
         </Tooltip>
-
         <Typography
           variant="h6"
           fontWeight="bold"
@@ -191,15 +192,31 @@ const Folders = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [addNoteOpen, setAddNoteOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [newFolderColor, setNewFolderColor] = useState(predefinedColors[0]);
+  const [newFolderColor, setNewFolderColor] = useState("");
   const [editingFolder, setEditingFolder] = useState(null);
   const [selectedNoteId, setSelectedNoteId] = useState("");
+  const userInfo = useSelector((state) => state.auth.userInfo);
+  const navigate = useNavigate();
+
+  // Redirect to login if user is not logged in
+  useEffect(() => {
+    if (!userInfo) {
+      navigate("/login"); // Redirect to login page
+    }
+  }, [userInfo, navigate]);
 
   // Fetch folders and notes from the database on component mount
   useEffect(() => {
-    const fetchFolders = async () => {
+    const userId = userInfo ? userInfo._id : null;
+
+    const fetchFolders = async (userId) => {
+      if (!userId) {
+        console.error("User ID is missing. Cannot fetch folders.");
+        return;
+      }
+
       try {
-        const response = await getFolders();
+        const response = await getFoldersusr(userId); // Pass userId to the API call
         setFolders(response.data); // Assuming the API returns an array of folders
       } catch (error) {
         console.error("Failed to fetch folders:", error);
@@ -208,9 +225,18 @@ const Folders = () => {
 
     const fetchAllNotes = async () => {
       try {
-        const handwrittenNotes = await getNotes();
-        const voiceNotes = await getVoiceNotes();
-        const structuredTexts = await getStructuredTexts();
+        // Ensure we have the userId available
+        const userId = userInfo?._id;
+        if (!userId) {
+          console.error("User ID is missing. Cannot fetch notes.");
+          return;
+        }
+
+        // Use the user-specific API endpoints
+        const handwrittenNotes = await getNotesuser(userId); // Use getNotesuser instead of getNotes
+        const voiceNotes = await getVoiceNotes(userId); // This needs a user-specific endpoint
+        const structuredTexts = await getStructuredTexts(userId); // This needs a user-specific endpoint
+
         setAllNotes([
           ...handwrittenNotes.data,
           ...voiceNotes.data,
@@ -221,9 +247,9 @@ const Folders = () => {
       }
     };
 
-    fetchFolders();
+    fetchFolders(userId);
     fetchAllNotes();
-  }, []);
+  }, [userInfo]);
 
   const handleAddFolder = () => {
     setOpen(true);
@@ -234,7 +260,7 @@ const Folders = () => {
     setEditOpen(false);
     setAddNoteOpen(false);
     setNewFolderName("");
-    setNewFolderColor(predefinedColors[0]);
+    setNewFolderColor("");
     setSelectedNoteId("");
   };
 
@@ -250,15 +276,27 @@ const Folders = () => {
       return;
     }
 
+    if (!newFolderColor) {
+      handleClose();
+      Swal.fire({
+        title: "Error!",
+        text: "Please select a folder color.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    // Check if a folder with the same name already exists for the user
     const folderExists = folders.some(
-      (folder) => folder.name === newFolderName
+      (folder) => folder.name.toLowerCase() === newFolderName.toLowerCase()
     );
 
     if (folderExists) {
       handleClose();
       Swal.fire({
         title: "Error!",
-        text: "Folder name already exists.",
+        text: "A folder with this name already exists.",
         icon: "error",
         confirmButtonText: "OK",
       });
@@ -267,6 +305,7 @@ const Folders = () => {
 
     try {
       const newFolder = {
+        userId: userInfo._id,
         name: newFolderName,
         color: newFolderColor,
         notes: [],
@@ -300,7 +339,25 @@ const Folders = () => {
   };
 
   const handleUpdateFolder = async () => {
-    if (newFolderName.trim() === "") return;
+    if (newFolderName.trim() === "") {
+      Swal.fire({
+        title: "Error!",
+        text: "Folder name cannot be empty.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    if (!newFolderColor) {
+      Swal.fire({
+        title: "Error!",
+        text: "Please select a folder color.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
 
     const folderExists = folders.some(
       (f) =>
@@ -320,27 +377,38 @@ const Folders = () => {
     }
 
     try {
-      const updatedFolder = { name: newFolderName, color: newFolderColor };
+      const updatedFolder = {
+        userId: userInfo._id,
+        name: newFolderName,
+        color: newFolderColor,
+      };
+
       const response = await updateFolder(editingFolder._id, updatedFolder);
-      const updatedFolders = folders.map((f) =>
-        f._id === editingFolder._id ? response.data.folder : f
-      );
-      setFolders(updatedFolders);
-      setEditOpen(false);
-      setEditingFolder(null);
-      setNewFolderName("");
-      setNewFolderColor(predefinedColors[0]);
-      Swal.fire({
-        title: "Success!",
-        text: "Folder updated successfully.",
-        icon: "success",
-        confirmButtonText: "OK",
-      });
+
+      if (response.status === 200) {
+        const updatedFolders = folders.map((f) =>
+          f._id === editingFolder._id ? response.data.folder : f
+        );
+        setFolders(updatedFolders);
+        setEditOpen(false);
+        setEditingFolder(null);
+        setNewFolderName("");
+        setNewFolderColor("");
+        Swal.fire({
+          title: "Success!",
+          text: "Folder updated successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+        });
+      } else {
+        throw new Error("Unexpected response status: " + response.status);
+      }
     } catch (error) {
+      handleClose();
       console.error("Failed to update folder:", error);
       Swal.fire({
         title: "Error!",
-        text: "Failed to update folder.",
+        text: error.response?.data?.message || "Failed to update folder.",
         icon: "error",
         confirmButtonText: "OK",
       });
@@ -386,42 +454,84 @@ const Folders = () => {
   const handleAddNoteToFolder = async () => {
     if (!selectedNoteId) return;
     try {
-      // Check if the note is already in another folder
-      const existingFolder = folders.find((folder) =>
-        folder.notes.some((note) => note.noteId === selectedNoteId)
+      // First check if the note is already in another folder
+      const existingFolderCheck = await Promise.all(
+        folders.map(async (folder) => {
+          if (folder._id !== selectedFolder) {
+            const response = await getNotesInFolder(folder._id);
+            const foundNote = response.data.notes.find(
+              (note) => note.noteId._id === selectedNoteId
+            );
+            if (foundNote) {
+              return {
+                exists: true,
+                folderName: folder.name,
+                folderId: folder._id,
+              };
+            }
+          }
+          return { exists: false };
+        })
       );
 
-      if (existingFolder && existingFolder._id !== selectedFolder) {
+      const existingFolder = existingFolderCheck.find(
+        (result) => result.exists
+      );
+
+      if (existingFolder) {
         handleClose();
-        // Show confirmation alert
+        // Show confirmation dialog to move the note
         const result = await Swal.fire({
           title: "Note already in another folder",
-          text: `This note is already in the folder "${existingFolder.name}". Do you want to move it to the selected folder?`,
+          text: `This note is already in the folder "${existingFolder.folderName}". Do you want to move it to this folder instead?`,
           icon: "warning",
           showCancelButton: true,
           confirmButtonText: "Yes, move it",
           cancelButtonText: "Cancel",
         });
 
-        if (!result.isConfirmed) {
-          return; // Exit if the user cancels
-        }
-      }
+        if (result.isConfirmed) {
+          // Remove from the old folder
+          await removeNoteFromFolder(existingFolder.folderId, selectedNoteId);
 
-      const note = {
-        noteId: selectedNoteId,
-        type: allNotes.find((note) => note._id === selectedNoteId).type,
-      };
-      await addNoteToFolder(selectedFolder, note);
-      const response = await getNotesInFolder(selectedFolder);
-      setNotes(response.data.notes);
-      handleClose();
-      Swal.fire({
-        title: "Success!",
-        text: "Note successfully added to the Folder.",
-        icon: "success",
-        confirmButtonText: "OK",
-      });
+          // Add to the new folder
+          const noteData = {
+            noteId: selectedNoteId,
+            userId: userInfo._id,
+          };
+          await addNoteToFolder(selectedFolder, noteData);
+
+          const response = await getNotesInFolder(selectedFolder);
+          setNotes(response.data.notes);
+          handleClose();
+          Swal.fire({
+            title: "Success!",
+            text: "Note moved to this folder successfully.",
+            icon: "success",
+            confirmButtonText: "OK",
+          });
+        } else {
+          handleClose();
+          return;
+        }
+      } else {
+        // Note is not in any other folder, proceed with normal addition
+        const noteData = {
+          noteId: selectedNoteId,
+          userId: userInfo._id,
+        };
+
+        await addNoteToFolder(selectedFolder, noteData);
+        const response = await getNotesInFolder(selectedFolder);
+        setNotes(response.data.notes);
+        handleClose();
+        Swal.fire({
+          title: "Success!",
+          text: "Note successfully added to the Folder.",
+          icon: "success",
+          confirmButtonText: "OK",
+        });
+      }
     } catch (error) {
       console.error("Failed to add note to folder:", error);
       Swal.fire({
@@ -478,17 +588,17 @@ const Folders = () => {
       folders.find((f) => f._id === selectedFolder)?.name || "Unnamed Folder";
     const doc = new jsPDF();
 
-    // Add title
+    // Add title and user info
     doc.setFontSize(18);
     doc.text(`Folder Report: ${folderName}`, 20, 20);
 
-    // Add metadata
     doc.setFontSize(12);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
-    doc.text(`Total Notes: ${notes.length}`, 20, 40);
+    doc.text(`User: ${userInfo.name || "Unknown User"}`, 20, 30);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 40);
+    doc.text(`Total Notes: ${notes.length}`, 20, 50);
 
     // Add notes
-    let yPosition = 60;
+    let yPosition = 70;
     doc.setFontSize(14);
     doc.text("Notes:", 20, yPosition);
     yPosition += 10;
@@ -500,10 +610,8 @@ const Folders = () => {
         note.noteId.transcript ||
         note.noteId.extractedText ||
         "No content";
-      const type = note.type || "Unknown";
-      const addedAt = note.addedAt
-        ? new Date(note.addedAt).toLocaleDateString()
-        : "Unknown Date";
+      const type = note.type;
+      const addedAt = new Date(note.addedAt).toLocaleDateString();
 
       doc.setFontSize(12);
       doc.text(`${index + 1}. ${title}`, 20, yPosition);
@@ -526,7 +634,9 @@ const Folders = () => {
 
     // Save the PDF
     doc.save(
-      `${folderName}_Report_${new Date().toISOString().split("T")[0]}.pdf`
+      `${folderName}_Report_${userInfo._id}_${
+        new Date().toISOString().split("T")[0]
+      }.pdf`
     );
 
     Swal.fire({
@@ -725,6 +835,11 @@ const Folders = () => {
                 />
               ))}
             </div>
+            {!newFolderColor && (
+              <Typography variant="caption" className="text-red-500 mt-2 block">
+                Please select a color.
+              </Typography>
+            )}
           </div>
         </DialogContent>
         <DialogActions className="p-4 bg-gray-50 border-t border-gray-100">
